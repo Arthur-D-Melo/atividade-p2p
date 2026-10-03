@@ -4,27 +4,35 @@ import time
 HOST = "localhost"
 PORT = 5000
 
-cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-inicio = time.perf_counter()
+def baixar_arquivo():
+    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-cliente.connect((HOST, PORT))
+    inicio = time.perf_counter()
 
-total_recebido = 0
+    cliente.connect((HOST, PORT))
 
-while True:
-    dados = cliente.recv(64 * 1024)
+    total_recebido = 0
 
-    if not dados:
-        break
+    while True:
+        dados = cliente.recv(64 * 1024)
 
-    total_recebido += len(dados)
+        if not dados:
+            break
 
-fim = time.perf_counter()
+        total_recebido += len(dados)
 
-cliente.close()
+    fim = time.perf_counter()
 
-tempo = fim - inicio
+    cliente.close()
 
-print(f"Recebidos: {total_recebido} bytes")
-print(f"Tempo: {tempo:.4f} segundos")
+    tempo = fim - inicio
+
+    return tempo, total_recebido
+
+
+if __name__ == "__main__":
+    tempo, total_recebido = baixar_arquivo()
+
+    print(f"Recebidos: {total_recebido} bytes")
+    print(f"Tempo: {tempo:.4f} segundos")

@@ -28,7 +28,14 @@ Para simular nós separados, os testes finais foram executados com containers Do
 
 É necessário ter Python e Docker instalados.
 
-Para executar todos os testes finais:
+Com o Docker em execução, rode:
 
 ```bash
 python run_docker_benchmarks.py
+```
+
+Os arquivos de 5 MB, 50 MB e 500 MB são criados automaticamente caso ainda não existam.
+
+Os resultados dos testes são salvos na pasta `results/`.
+
+O relatório final da atividade pode ser encontrado na pasta `relatorio/`.

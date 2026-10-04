@@ -39,10 +39,35 @@ CSV_FINAL = (
 )
 
 
+def criar_arquivos_teste():
+    tamanhos = {
+        "arquivo_5mb.bin": 5 * 1024 * 1024,
+        "arquivo_50mb.bin": 50 * 1024 * 1024,
+        "arquivo_500mb.bin": 500 * 1024 * 1024
+    }
+
+    pasta = ROOT / "files"
+
+    pasta.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    for nome, tamanho in tamanhos.items():
+        caminho = pasta / nome
+
+        if not caminho.exists():
+            print(f"Criando {nome}...")
+
+            with open(caminho, "wb") as arquivo:
+                arquivo.truncate(tamanho)
+
+
 def executar(comando):
     subprocess.run(
         comando,
-        check=True
+        check=True,
+        cwd=ROOT
     )
 
 
@@ -111,6 +136,7 @@ def esperar_processo(processo, nome):
 
     except subprocess.TimeoutExpired:
         processo.kill()
+
         raise RuntimeError(
             f"Timeout no container {nome}"
         )
@@ -184,7 +210,14 @@ def experimento_cliente_servidor(
         text=True
     )
 
-    time.sleep(0.5)
+    time.sleep(1)
+
+    if servidor.poll() is not None:
+        erro = servidor.stderr.read()
+
+        raise RuntimeError(
+            f"Erro ao iniciar {script_servidor}:\n{erro}"
+        )
 
     clientes = []
 
@@ -248,6 +281,7 @@ def experimento_cliente_servidor(
         servidor.wait(
             timeout=5
         )
+
     except subprocess.TimeoutExpired:
         servidor.kill()
 
@@ -318,6 +352,7 @@ def experimento_p2p(
     ):
         if numero == 1:
             upstream = "p2p-seed"
+
         else:
             upstream = (
                 f"p2p-peer-{numero - 1}"
@@ -441,6 +476,8 @@ def experimento_p2p(
 
 
 def main():
+    criar_arquivos_teste()
+
     PASTA_RESULTADOS.mkdir(
         parents=True,
         exist_ok=True

@@ -1,16 +1,19 @@
+import json
+import os
 import socket
 import time
 
-HOST = "localhost"
-PORT = 5055
+
+HOST = os.getenv("SERVER_HOST", "localhost")
+PORT = int(os.getenv("SERVER_PORT", "5055"))
 
 
-def baixar_arquivo():
+def baixar_arquivo(host=HOST, port=PORT):
     cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     inicio = time.perf_counter()
 
-    cliente.connect((HOST, PORT))
+    cliente.connect((host, port))
 
     total_recebido = 0
 
@@ -33,6 +36,17 @@ def baixar_arquivo():
 
 if __name__ == "__main__":
     tempo, total_recebido = baixar_arquivo()
+
+    resultado = {
+        "tempo": tempo,
+        "bytes": total_recebido
+    }
+
+    arquivo_resultado = os.getenv("RESULT_FILE")
+
+    if arquivo_resultado:
+        with open(arquivo_resultado, "w") as arquivo:
+            json.dump(resultado, arquivo)
 
     print(f"Recebidos: {total_recebido} bytes")
     print(f"Tempo: {tempo:.4f} segundos")

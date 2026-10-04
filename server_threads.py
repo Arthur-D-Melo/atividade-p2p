@@ -1,9 +1,10 @@
 import socket
 import threading
 import sys
+import os
 
 HOST = "0.0.0.0"
-PORT = 5055
+PORT = int(os.getenv("SERVER_PORT", "5055"))
 
 caminho_arquivo = sys.argv[1] if len(sys.argv) > 1 else "files/arquivo_5mb.bin"
 

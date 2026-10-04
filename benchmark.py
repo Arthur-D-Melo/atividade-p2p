@@ -3,8 +3,9 @@ from statistics import mean
 
 from client import baixar_arquivo
 
+import sys
 
-quantidade_clientes = 4
+quantidade_clientes = int(sys.argv[1]) if len(sys.argv) > 1 else 4
 
 
 with ThreadPoolExecutor(max_workers=quantidade_clientes) as executor:

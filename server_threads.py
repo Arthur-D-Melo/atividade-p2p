@@ -1,10 +1,11 @@
 import socket
 import threading
+import sys
 
 HOST = "0.0.0.0"
 PORT = 5000
 
-caminho_arquivo = "files/arquivo_5mb.bin"
+caminho_arquivo = sys.argv[1] if len(sys.argv) > 1 else "files/arquivo_5mb.bin"
 
 
 def atender_cliente(conexao, endereco):

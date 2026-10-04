@@ -3,7 +3,7 @@ import threading
 import sys
 
 HOST = "0.0.0.0"
-PORT = 5000
+PORT = 5055
 
 caminho_arquivo = sys.argv[1] if len(sys.argv) > 1 else "files/arquivo_5mb.bin"
 
@@ -26,6 +26,8 @@ def atender_cliente(conexao, endereco):
 
 
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 servidor.bind((HOST, PORT))
 

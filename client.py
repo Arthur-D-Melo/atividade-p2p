@@ -2,7 +2,7 @@ import socket
 import time
 
 HOST = "localhost"
-PORT = 5000
+PORT = 5055
 
 
 def baixar_arquivo():

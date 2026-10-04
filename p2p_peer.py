@@ -5,11 +5,15 @@ CHUNK_SIZE = 64 * 1024
 
 
 def receber_arquivo(host, porta):
-    cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     inicio = time.perf_counter()
 
-    cliente.connect((host, porta))
+    while True:
+        try:
+            cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            cliente.connect((host, porta))
+            break
+        except ConnectionRefusedError:
+            time.sleep(0.05)
 
     dados_recebidos = bytearray()
 

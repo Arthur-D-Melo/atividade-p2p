@@ -4,37 +4,19 @@ import time
 CHUNK_SIZE = 64 * 1024
 
 
-def receber_arquivo(host, porta):
-    inicio = time.perf_counter()
-
+def conectar_com_tentativas(host, porta):
     while True:
+        cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         try:
-            cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             cliente.connect((host, porta))
-            break
+            return cliente
         except ConnectionRefusedError:
+            cliente.close()
             time.sleep(0.05)
 
-    dados_recebidos = bytearray()
 
-    while True:
-        dados = cliente.recv(CHUNK_SIZE)
-
-        if not dados:
-            break
-
-        dados_recebidos.extend(dados)
-
-    cliente.close()
-
-    fim = time.perf_counter()
-
-    tempo = fim - inicio
-
-    return bytes(dados_recebidos), tempo
-
-
-def enviar_arquivo(porta, dados_arquivo):
+def enviar_arquivo(porta, caminho_arquivo):
     servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     servidor.setsockopt(
@@ -44,18 +26,73 @@ def enviar_arquivo(porta, dados_arquivo):
     )
 
     servidor.bind(("0.0.0.0", porta))
-
     servidor.listen(1)
-
-    print(f"Aguardando outro peer na porta {porta}...")
 
     conexao, endereco = servidor.accept()
 
-    print(f"Peer conectado: {endereco}")
+    with open(caminho_arquivo, "rb") as arquivo:
+        while True:
+            dados = arquivo.read(CHUNK_SIZE)
 
-    conexao.sendall(dados_arquivo)
+            if not dados:
+                break
+
+            conexao.sendall(dados)
 
     conexao.close()
     servidor.close()
 
-    print("Arquivo enviado para o próximo peer.")
+
+def receber_e_repassar(host, porta_origem, porta_destino=None):
+    inicio = time.perf_counter()
+
+    origem = conectar_com_tentativas(
+        host,
+        porta_origem
+    )
+
+    destino = None
+    servidor_destino = None
+
+    if porta_destino is not None:
+        servidor_destino = socket.socket(
+            socket.AF_INET,
+            socket.SOCK_STREAM
+        )
+
+        servidor_destino.setsockopt(
+            socket.SOL_SOCKET,
+            socket.SO_REUSEADDR,
+            1
+        )
+
+        servidor_destino.bind(
+            ("0.0.0.0", porta_destino)
+        )
+
+        servidor_destino.listen(1)
+
+        destino, _ = servidor_destino.accept()
+
+    total_recebido = 0
+
+    while True:
+        dados = origem.recv(CHUNK_SIZE)
+
+        if not dados:
+            break
+
+        total_recebido += len(dados)
+
+        if destino is not None:
+            destino.sendall(dados)
+
+    origem.close()
+
+    if destino is not None:
+        destino.close()
+        servidor_destino.close()
+
+    fim = time.perf_counter()
+
+    return total_recebido, fim - inicio

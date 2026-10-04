@@ -1,90 +1,102 @@
+import sys
 import threading
+
 from statistics import mean
+from p2p_peer import enviar_arquivo, receber_e_repassar
 
-from p2p_peer import receber_arquivo, enviar_arquivo
 
-
-CAMINHO_ARQUIVO = "files/arquivo_5mb.bin"
 PORTA_INICIAL = 6000
-QUANTIDADE_PEERS = 4
 
 
-resultados = []
+def executar_benchmark_p2p(caminho_arquivo, quantidade_peers):
+    resultados = []
+    lock = threading.Lock()
 
-
-def executar_seed():
-    with open(CAMINHO_ARQUIVO, "rb") as arquivo:
-        dados = arquivo.read()
-
-    enviar_arquivo(
-        porta=PORTA_INICIAL,
-        dados_arquivo=dados
-    )
-
-
-def executar_peer(numero):
-    porta_origem = PORTA_INICIAL + numero - 1
-
-    dados, tempo = receber_arquivo(
-        host="localhost",
-        porta=porta_origem
-    )
-
-    resultados.append(
-        (numero, tempo, len(dados))
-    )
-
-    if numero < QUANTIDADE_PEERS:
-        porta_destino = PORTA_INICIAL + numero
-
+    def executar_seed():
         enviar_arquivo(
-            porta=porta_destino,
-            dados_arquivo=dados
+            porta=PORTA_INICIAL,
+            caminho_arquivo=caminho_arquivo
         )
 
+    def executar_peer(numero):
+        porta_origem = PORTA_INICIAL + numero - 1
 
-thread_seed = threading.Thread(
-    target=executar_seed
-)
+        if numero < quantidade_peers:
+            porta_destino = PORTA_INICIAL + numero
+        else:
+            porta_destino = None
 
-thread_seed.start()
+        total, tempo = receber_e_repassar(
+            host="localhost",
+            porta_origem=porta_origem,
+            porta_destino=porta_destino
+        )
 
+        with lock:
+            resultados.append(
+                (numero, tempo, total)
+            )
 
-threads_peers = []
-
-for numero in range(1, QUANTIDADE_PEERS + 1):
-    thread = threading.Thread(
-        target=executar_peer,
-        args=(numero,)
+    thread_seed = threading.Thread(
+        target=executar_seed
     )
 
-    thread.start()
+    thread_seed.start()
 
-    threads_peers.append(thread)
+    threads = []
+
+    for numero in range(1, quantidade_peers + 1):
+        thread = threading.Thread(
+            target=executar_peer,
+            args=(numero,)
+        )
+
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
+    thread_seed.join()
+
+    resultados.sort()
+
+    tempos = []
+
+    for numero, tempo, total in resultados:
+        tempos.append(tempo)
+
+        print(
+            f"Peer {numero}: "
+            f"{total} bytes em {tempo:.4f} segundos"
+        )
+
+    return {
+        "minimo": min(tempos),
+        "medio": mean(tempos),
+        "maximo": max(tempos)
+    }
 
 
-for thread in threads_peers:
-    thread.join()
-
-
-thread_seed.join()
-
-
-resultados.sort()
-
-tempos = []
-
-
-for numero, tempo, total_recebido in resultados:
-    tempos.append(tempo)
-
-    print(
-        f"Peer {numero}: "
-        f"{total_recebido} bytes em {tempo:.4f} segundos"
+if __name__ == "__main__":
+    caminho = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else "files/arquivo_5mb.bin"
     )
 
+    quantidade = (
+        int(sys.argv[2])
+        if len(sys.argv) > 2
+        else 4
+    )
 
-print()
-print(f"Tempo mínimo: {min(tempos):.4f} segundos")
-print(f"Tempo médio: {mean(tempos):.4f} segundos")
-print(f"Tempo máximo: {max(tempos):.4f} segundos")
+    resultado = executar_benchmark_p2p(
+        caminho,
+        quantidade
+    )
+
+    print()
+    print(f"Tempo mínimo: {resultado['minimo']:.4f} segundos")
+    print(f"Tempo médio: {resultado['medio']:.4f} segundos")
+    print(f"Tempo máximo: {resultado['maximo']:.4f} segundos")
